@@ -14,7 +14,7 @@ function statique(t::Matrix{Int}, d::Matrix{Int}, D::Int)
 
     @variable(m, x[1:n, 1:n, 1:n], Bin);
     @variable(m, y[1:n], Bin);
-    @variable(m, u[1:n, 1:n], Int);
+    @variable(m, 0 <= u[1:n, 1:n] <= n, Int);
 
     @objective(m,Min, sum(x[i,j,k]*t[i,j] for i in 1:n, j in 1:n, k in 1:n))
 
