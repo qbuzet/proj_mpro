@@ -2,9 +2,9 @@ using JuMP
 #using CPLEX
 using GLPK
 
-
-
-function robuste_dualisation(t::Matrix{Int}, d::Matrix{Int}, D::Int, T::Int, t_hat::Matrix{Int})
+function robuste_dualisation(file_name::String)
+    file_acces = "./data/" + file_name
+    include(file_acces)
 
     # Taille de la grille
     n = size(t, 1)
@@ -30,7 +30,7 @@ function robuste_dualisation(t::Matrix{Int}, d::Matrix{Int}, D::Int, T::Int, t_h
 
 
 
-    @constraint(m, [k in 1:n] , sum(x[i,j,k] * d[i] for i in 1:n, j in 1:n ) <= D*y[k] )
+    @constraint(m, [k in 1:n] , sum(x[i,j,k] * d[i] for i in 1:n, j in 1:n ) <= C*y[k] )
 
     @constraint(m, [i in 2:n] , sum(x[i,j,k] for k in 1:n, j in 1:n ) == 1 )
     @constraint(m, [j in 2:n] , sum(x[i,j,k] for k in 1:n, i in 1:n ) == 1 )
@@ -40,8 +40,8 @@ function robuste_dualisation(t::Matrix{Int}, d::Matrix{Int}, D::Int, T::Int, t_h
     @constraint(m, sum(x[1,j,k] for k in 1:n, j in 2:n) == sum(y[k] for k in 1:n))
     @constraint(m, sum(x[i,1,k] for k in 1:n, i in 2:n) == sum(y[k] for k in 1:n))
 
-    @constraint(m, [j in 1:n, i in 1:n, i!=j], (t_hat[i] + t_hat[j]) * sum(x[i,j,k] for k in 1:n) >= lambda_1 + alpha[i,j] )
-    @constraint(m, [j in 1:n, i in 1:n, i!=j], (t_hat[i] * t_hat[j]) * sum(x[i,j,k] for k in 1:n) >= lambda_2 + beta[i,j] )
+    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] + th[j]) * sum(x[i,j,k] for k in 1:n) >= lambda_1 + alpha[i,j] )
+    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] * th[j]) * sum(x[i,j,k] for k in 1:n) >= lambda_2 + beta[i,j] )
 
 
   
