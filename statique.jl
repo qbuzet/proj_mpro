@@ -4,7 +4,7 @@ using GLPK
 
 
 function statique(file_name::String)
-    file_acces = "./data/" + file_name
+    file_acces = "./data/" * file_name
     include(file_acces)
 
     # Créer le modèle
@@ -28,6 +28,14 @@ function statique(file_name::String)
     @constraint(m, sum(x[1,j,k] for k in 1:n, j in 2:n) == sum(y[k] for k in 1:n))
     @constraint(m, sum(x[i,1,k] for k in 1:n, i in 2:n) == sum(y[k] for k in 1:n))
 
+    optimize!(m)
 
+    feasibleSolutionFound = primal_status(m) == MOI.FEASIBLE_POINT
+    if feasibleSolutionFound
+        # Récupération des valeurs d’une variable
+        println("Valeur de l’objectif : ", JuMP.objective_value(m))
+        println("Nombre de véhicules : ", JuMP.value(sum(y[k] for k in 1:n)))
+    end
+end
     
   

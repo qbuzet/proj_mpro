@@ -3,7 +3,7 @@ using JuMP
 using GLPK
 
 function robuste_dualisation(file_name::String)
-    file_acces = "./data/" + file_name
+    file_acces = "./data/" * file_name
     include(file_acces)
 
     # Taille de la grille
@@ -40,8 +40,17 @@ function robuste_dualisation(file_name::String)
     @constraint(m, sum(x[1,j,k] for k in 1:n, j in 2:n) == sum(y[k] for k in 1:n))
     @constraint(m, sum(x[i,1,k] for k in 1:n, i in 2:n) == sum(y[k] for k in 1:n))
 
-    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] + th[j]) * sum(x[i,j,k] for k in 1:n) >= lambda_1 + alpha[i,j] )
-    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] * th[j]) * sum(x[i,j,k] for k in 1:n) >= lambda_2 + beta[i,j] )
+    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] + th[j]) * sum(x[i,j,k] for k in 1:n) <= lambda_1 + alpha[i,j] )
+    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] * th[j]) * sum(x[i,j,k] for k in 1:n) <= lambda_2 + beta[i,j] )
 
+    optimize!(m)
 
+    feasibleSolutionFound = primal_status(m) == MOI.FEASIBLE_POINT
+    if feasibleSolutionFound
+        # Récupération des valeurs d’une variable
+        println("Valeur de l’objectif : ", JuMP.objective_value(m))
+        println("Nombre de véhicules : ", JuMP.value(sum(y[k] for k in 1:n)))
+    end
+end
+    
   
