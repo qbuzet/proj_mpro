@@ -37,7 +37,7 @@ function robuste_dualisation(file_name::String)
     @constraint(m, [i in 2:n], u[i] <= C - d[i])
     @constraint(m, [i in 2:n], u[i] <= C*(1-x[1,i]))
                    
-    @constraint(m, [i in 1:n,j in 1:n, i!=j], u[j] - u[i] >= d[i] - C*(1-x[i,j]))
+    @constraint(m, [i in 2:n,j in 2:n, i!=j], u[j] - u[i] >= d[i] - C*(1-x[i,j]))
     @constraint(m, sum(x[i,i] for i in 1:n) == 0) # on ne peut pas aller de i à i
                         
    
@@ -46,13 +46,8 @@ function robuste_dualisation(file_name::String)
     @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] * th[j]) * x[i,j] <= lambda_2 + beta[i,j] )
 
     optimize!(m)
+    println("Valeur de l’objectif : ", JuMP.objective_value(m))
 
-    feasibleSolutionFound = primal_status(m) == MOI.FEASIBLE_POINT
-    if feasibleSolutionFound
-        # Récupération des valeurs d’une variable
-        println("Valeur de l’objectif : ", JuMP.objective_value(m))
-        println("Nombre de véhicules : ", JuMP.value(sum(y[k] for k in 1:n)))
-    end
 end
     
   

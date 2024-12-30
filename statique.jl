@@ -8,8 +8,8 @@ function statique(file_name::String)
     include(file_acces)
 
     # Créer le modèle
-    #m = Model(CPLEX.Optimizer)
-    m = Model(GLPK.Optimizer)
+    m = Model(CPLEX.Optimizer)
+    #m = Model(GLPK.Optimizer)
 
     @variable(m, x[1:n, 1:n], Bin);
     @variable(m, 0 <= u[1:n] );
@@ -25,7 +25,7 @@ function statique(file_name::String)
     @constraint(m, [i in 2:n], u[i] <= C - d[i])
     @constraint(m, [i in 2:n], u[i] <= C*(1-x[1,i]))
 
-    @constraint(m, [i in 1:n,j in 1:n, i!=j], u[j] - u[i] >= d[i] - C*(1-x[i,j]))
+    @constraint(m, [i in 2:n,j in 2:n, i!=j], u[j] - u[i] >= d[i] - C*(1-x[i,j]))
     @constraint(m, sum(x[i,i] for i in 1:n) == 0) # on ne peut pas aller de i à i
     
 
