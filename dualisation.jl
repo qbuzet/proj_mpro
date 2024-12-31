@@ -50,4 +50,21 @@ function robuste_dualisation(file_name::String)
 
 end
     
+
+
+function main()
+    results = []
+    global_start = time()
+    for file_name in readdir("./data")
+        if occursin("euclidean", file_name)
+            start = time()           
+            println("Fichier : ", file_name)
+            obj = statique(file_name)
+            exec_time = time() - start
+            global_exec_time = time() - global_start
+            push!(results, (file_name, obj, exec_time, global_exec_time))
+        end
+    end
+    println(results)
+end
   

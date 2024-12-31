@@ -8,8 +8,8 @@ function statique(file_name::String)
     include(file_acces)
 
     # Créer le modèle
-    m = Model(CPLEX.Optimizer)
-    #m = Model(GLPK.Optimizer)
+    #m = Model(CPLEX.Optimizer)
+    m = Model(GLPK.Optimizer)
 
     @variable(m, x[1:n, 1:n], Bin);
     @variable(m, 0 <= u[1:n] );
@@ -30,12 +30,30 @@ function statique(file_name::String)
     
 
     optimize!(m)
-    println("Valeur de l’objectif : ", JuMP.objective_value(m))
+    #println("Valeur de l’objectif : ", JuMP.objective_value(m))
 
     feasibleSolutionFound = primal_status(m) == MOI.FEASIBLE_POINT
     if feasibleSolutionFound
         # Récupération des valeurs d’une variable
-        println("Valeur de l’objectif : ", JuMP.objective_value(m))
-        
+        #println("Valeur de l’objectif : ", JuMP.objective_value(m))
+        return JuMP.objective_value(m)
+    else
+        return -1
 end
+end
+
+function main()
+    results = []
+    global_start = time()
+    for file_name in readdir("./data")
+        if occursin("euclidean", file_name)
+            start = time()           
+            println("Fichier : ", file_name)
+            obj = statique(file_name)
+            exec_time = time() - start
+            global_exec_time = time() - global_start
+            push!(results, (file_name, obj, exec_time, global_exec_time))
+        end
+    end
+    println(results)
 end
