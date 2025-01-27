@@ -1,7 +1,7 @@
 using JuMP
 using Gurobi
 
-file = "data/n_6-euclidean_true"
+file = "data/instance_n5.txt"
 include(file)
 
 function solve_SP(xx)
@@ -26,6 +26,36 @@ function solve_SP(xx)
     end
 end
 
+function greedy_SP(xx)
+    t1 = vec([((th[i]+th[j])*xx[i,j],i,j) for i in 1:n, j in 1:n])
+    t1 = sort(t1, by=x -> -x[1])
+    d1 = zeros(n,n)
+    budget1 = T
+    i = 1
+    while budget1 > 0 && i <= n*n
+        x = xx[t1[i][2],t1[i][3]]
+        aff = min(1*x,budget1*x)
+        d1[t1[i][2],t1[i][3]] = aff
+        budget1 -= aff
+        i += 1
+    end
+
+    t2 = vec([((th[i]*th[j])*xx[i,j],i,j) for i in 1:n, j in 1:n])
+    sort(t2, by=x -> -x[1])
+    d2 = zeros(n,n)
+    budget2 = T*T
+    i = 1
+    while budget2 > 0 && i <= n*n
+        x = xx[t2[i][2],t2[i][3]]
+        aff = min(2*x,budget2*x)
+        d2[t2[i][2],t2[i][3]] = aff
+        budget2 -= aff
+        i += 1
+    end
+
+    return sum((t[i,j] + d1[i,j]*(th[i]+th[j]) + d2[i,j]*th[i]*th[j])*xx[i,j] for i in 1:n, j in 1:n), d1, d2
+end
+
 counter = 0
 
 function my_callback_function(cb_data)
@@ -39,7 +69,6 @@ function my_callback_function(cb_data)
 
     else
         @assert status == MOI.CALLBACK_NODE_STATUS_UNKNOWN
-
     end
 
     zz = callback_value(cb_data, z)
@@ -47,7 +76,7 @@ function my_callback_function(cb_data)
 
     println("Callback n°", counter, ", z* : ", zz)
 
-    sz, dd1, dd2 = solve_SP(xx)
+    sz, dd1, dd2 = greedy_SP(xx) #solve_SP(xx)
     
     if sz > zz
         ncon = @build_constraint(z >= sum((t[i,j] + dd1[i,j]*(th[i]+th[j]) + dd2[i,j]*th[i]*th[j])*x[i,j] for i in 1:n, j in 1:n))
@@ -74,6 +103,8 @@ m = Model(Gurobi.Optimizer)
 
 set_optimizer_attribute(m, "OutputFlag", 0)
 set_attribute(m, MOI.LazyConstraintCallback(), my_callback_function)
+
+println("Instance : ", file)
 
 optimize!(m)
 
