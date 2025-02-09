@@ -1,11 +1,11 @@
 using JuMP
-using Gurobi
+using CPLEX
 
 file = "data/instance_n5.txt"
 include(file)
 
 function solve_SP(xx)
-    sm = Model(Gurobi.Optimizer)
+    sm = Model(CPLEX.Optimizer)
 
     @variable(sm, 0 <= d1[1:n, 1:n] <= 1)
     @variable(sm, 0 <= d2[1:n, 1:n] <= 2)
@@ -15,7 +15,7 @@ function solve_SP(xx)
 
     @objective(sm, Max, sum((t[i,j] + d1[i,j]*(th[i]+th[j]) + d2[i,j]*th[i]*th[j])*xx[i,j] for i in 1:n, j in 1:n))
 
-    set_optimizer_attribute(sm, "OutputFlag", 0)
+    #set_optimizer_attribute(sm, "OutputFlag", 0)
 
     optimize!(sm)
 
@@ -57,7 +57,6 @@ function greedy_SP(xx)
 end
 
 counter = 0
-
 function my_callback_function(cb_data)
     global counter
     counter += 1
@@ -85,7 +84,7 @@ function my_callback_function(cb_data)
     return
 end
 
-m = Model(Gurobi.Optimizer)
+m = Model(CPLEX.Optimizer)
 
 @variable(m, z, Int)
 @variable(m, x[1:n, 1:n], Bin)
@@ -101,7 +100,7 @@ m = Model(Gurobi.Optimizer)
 
 @objective(m, Min, z)
 
-set_optimizer_attribute(m, "OutputFlag", 0)
+#set_optimizer_attribute(m, "OutputFlag", 0)
 set_attribute(m, MOI.LazyConstraintCallback(), my_callback_function)
 
 println("Instance : ", file)
