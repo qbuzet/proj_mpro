@@ -113,3 +113,38 @@ if primal_status(m) == MOI.FEASIBLE_POINT
 else
     println("Aïe : ", primal_status(m))
 end
+
+
+list_name = ["n_5-euclidean_false","n_5-euclidean_true",
+                "n_6-euclidean_false","n_6-euclidean_true",
+                "n_7-euclidean_false","n_7-euclidean_true",
+                "n_8-euclidean_false","n_8-euclidean_true",
+                "n_9-euclidean_false","n_9-euclidean_true",
+                "n_10-euclidean_false","n_10-euclidean_true",
+                "n_11-euclidean_false","n_11-euclidean_true",
+                "n_12-euclidean_false","n_12-euclidean_true",
+                "n_13-euclidean_false","n_13-euclidean_true",
+                "n_14-euclidean_false","n_14-euclidean_true",
+                "n_15-euclidean_false","n_15-euclidean_true",
+                "n_16-euclidean_false","n_16-euclidean_true",
+                "n_17-euclidean_false","n_17-euclidean_true",
+                "n_18-euclidean_false","n_18-euclidean_true",
+                "n_19-euclidean_false","n_19-euclidean_true",
+                "n_20-euclidean_false","n_20-euclidean_true",
+                "n_25-euclidean_false","n_25-euclidean_true",
+                "n_30-euclidean_false","n_30-euclidean_true",
+                "n_35-euclidean_false","n_35-euclidean_true",
+                "n_40-euclidean_false","n_40-euclidean_true",
+                "n_45-euclidean_false","n_45-euclidean_true",
+                "n_50-euclidean_false","n_50-euclidean_true",
+                "n_55-euclidean_false","n_55-euclidean_true",
+                "n_60-euclidean_false","n_60-euclidean_true",
+                "n_65-euclidean_false","n_65-euclidean_true",
+                "n_70-euclidean_false","n_70-euclidean_true",
+                "n_75-euclidean_false","n_75-euclidean_true",
+                "n_80-euclidean_false","n_80-euclidean_true",
+                "n_85-euclidean_false","n_85-euclidean_true",
+                "n_90-euclidean_false","n_90-euclidean_true",
+                "n_95-euclidean_false","n_95-euclidean_true",
+                "n_100-euclidean_false","n_100-euclidean_true",
+                ]
