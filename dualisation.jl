@@ -10,11 +10,10 @@ function robuste_dualisation(file_name::String)
     n = size(t, 1)
 
     # Créer le modèle
+
+
     m = Model(CPLEX.Optimizer)
-    #m = Model(GLPK.Optimizer,)
-
-    
-
+    set_optimizer_attribute(m, "CPX_PARAM_TILIM", 180)
     
 
     @variable(m, x[1:n, 1:n], Bin);
@@ -50,7 +49,7 @@ function robuste_dualisation(file_name::String)
     @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] * th[j]) * x[i,j] <= lambda_2 + beta[i,j] )
 
     optimize!(m)
-    return JuMP.objective_value(m)
+    return MOI.get(m, MOI.RelativeGap())
 
 end
     
@@ -66,6 +65,26 @@ list_name = ["n_5-euclidean_false","n_5-euclidean_true",
                 "n_14-euclidean_false","n_14-euclidean_true",
                 "n_15-euclidean_false","n_15-euclidean_true",
                 "n_16-euclidean_false","n_16-euclidean_true",
+                "n_17-euclidean_false","n_17-euclidean_true",
+                "n_18-euclidean_false","n_18-euclidean_true",
+                "n_19-euclidean_false","n_19-euclidean_true",
+                "n_20-euclidean_false","n_20-euclidean_true",
+                "n_25-euclidean_false","n_25-euclidean_true",
+                "n_30-euclidean_false","n_30-euclidean_true",
+                "n_35-euclidean_false","n_35-euclidean_true",
+                "n_40-euclidean_false","n_40-euclidean_true",
+                "n_45-euclidean_false","n_45-euclidean_true",
+                "n_50-euclidean_false","n_50-euclidean_true",
+                "n_55-euclidean_false","n_55-euclidean_true",
+                "n_60-euclidean_false","n_60-euclidean_true",
+                "n_65-euclidean_false","n_65-euclidean_true",
+                "n_70-euclidean_false","n_70-euclidean_true",
+                "n_75-euclidean_false","n_75-euclidean_true",
+                "n_80-euclidean_false","n_80-euclidean_true",
+                "n_85-euclidean_false","n_85-euclidean_true",
+                "n_90-euclidean_false","n_90-euclidean_true",
+                "n_95-euclidean_false","n_95-euclidean_true",
+                "n_100-euclidean_false","n_100-euclidean_true",
                 ]
 liste_reduite = ["n_5-euclidean_true"]
 function main(liste)
@@ -75,13 +94,10 @@ function main(liste)
         if occursin("euclidean", file_name)
             start = time()           
             println("Fichier : ", file_name)
-            obj = robuste_dualisation(file_name)
+            gap = robuste_dualisation(file_name)
             exec_time = time() - start
             global_exec_time = time() - global_start
-            push!(results, (file_name, obj, exec_time, global_exec_time))
-            if global_exec_time > 3600
-                break
-            end
+            push!(results, (file_name, gap, exec_time, global_exec_time))
         end
     end
     fout = open("output_dualisation.txt", "w")
