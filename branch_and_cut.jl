@@ -56,7 +56,7 @@ function greedy_SP(xx)
     return sum((t[i,j] + d1[i,j]*(th[i]+th[j]) + d2[i,j]*th[i]*th[j])*xx[i,j] for i in 1:n, j in 1:n), d1, d2
 end
 
-function branch_and_cut(file_name::String)
+function branch_and_cut(file_name::String, global_time_start)
     file_acces = "./data/" * file_name
     include(file_acces)
 
@@ -81,9 +81,13 @@ function branch_and_cut(file_name::String)
     @objective(m, Min, z)
     
     #set_optimizer_attribute(m, "OutputFlag", 0)
-        
+    
     i = 1
     while true
+        if time() - global_time_start > 3600
+            return "error";
+        end
+
         println("Iteration : ", i)
         optimize!(m)
 
@@ -94,7 +98,7 @@ function branch_and_cut(file_name::String)
     
         zz = objective_value(m)
         xx = value.(x)
-        sz, dd1, dd2 = greedy_SP(xx)
+        sz, dd1, dd2 = greedy_SP(xx) #solve_SP(xx)
 
         if sz <= zz
         #    println("Valeur optimale : ", objective_value(m))
@@ -106,6 +110,8 @@ function branch_and_cut(file_name::String)
 
         i += 1
     end
+
+    return objective_value(m)
 end
 
 
@@ -128,7 +134,7 @@ function main(liste)
         if occursin("euclidean", file_name)
             start = time()           
             println("Fichier : ", file_name)
-            obj = branch_and_cut(file_name)
+            obj = branch_and_cut(file_name, global_start)
             exec_time = time() - start
             global_exec_time = time() - global_start
             push!(results, (file_name, obj, exec_time, global_exec_time))
@@ -137,9 +143,10 @@ function main(liste)
             end
         end
     end
-    fout = open("output_branch_and_cut.txt", "w")
+    fout = open("output_branch_and_cut_ex.txt", "w")
     # Ecrire "test" dans ce fichier
     println(fout, results)
     close(fout)
 end
   
+main(list_name)
