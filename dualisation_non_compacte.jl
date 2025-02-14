@@ -4,93 +4,75 @@ using CPLEX
 
 
 
-function robuste_dualisation_non_compacte(file_name::String)
+using JuMP, CPLEX
+
+function cvrp_non_compact(file_name::String)
+    # Chargement des données
     file_acces = "./data/" * file_name
-    include(file_acces)
+    include(file_acces)  # Fichier doit contenir t, d, C
 
+    n = size(t, 1)  # Nombre de clients + 1 (dépôt)
 
-    # Taille de la grille
-    n = size(t, 1)
-    
-    # Créer le modèle
+    # Modèle JuMP
     m = Model(CPLEX.Optimizer)
+    set_optimizer_attribute(m, "TimeLimit", 180)
 
-    #m = Model(GLPK.Optimizer)
-    
-       
+    # Variables de décision
+    @variable(m, x[1:n, 1:n], Bin)   # x[i,j] = 1 si l’arc (i,j) est utilisé
+    @variable(m, 0 <= y[1:n, 1:n])   # y[i,j] = charge transportée sur l’arc (i,j)
 
-    @variable(m, x[1:n, 1:n], Bin);
-    @variable(m, 0 <= u[1:n]);
+    # Objectif : Minimiser la distance totale parcourue
+    @objective(m, Min, sum(t[i,j] * x[i,j] for i in 1:n, j in 1:n))
 
-    @variable(m, lambda_1 >= 0 );
-    @variable(m, lambda_2 >= 0 );
-    @variable(m, alpha[1:n, 1:n]>= 0);
-    @variable(m, beta[1:n, 1:n]>= 0);
+    # Chaque client est visité exactement une fois
+    @constraint(m, [i in 2:n], sum(x[i,j] for j in 1:n if j != i) == 1)
+    @constraint(m, [j in 2:n], sum(x[i,j] for i in 1:n if i != j) == 1)
 
+    # Contrainte de flot (capacité des véhicules)
+    @constraint(m, [i in 2:n, j in 2:n,  i != j],  y[i,j] >= d[j] * x[i,j])  # Si un arc est pris, il doit transporter au moins la demande
+    @constraint(m, [i in 2:n, j in 2:n,  i != j],  y[i,j] <= (C - d[i]) * x[i,j])  # Le véhicule ne doit pas dépasser sa capacité
 
+    # Conservation du flot
+    @constraint(m, [i in 2:n], 
+        sum(y[j,i] for j in 1:n if j != i) == d[i] + sum(y[i,j] for j in 1:n if j != i))
 
-    @objective(m,Min,sum(beta[i,j]*2 + alpha[i,j] for i in 1:n, j in 1:n) 
-                     + sum(x[i,j]*t[i,j] for i in 1:n, j in 1:n)
-                        + T*lambda_1 + T*T * lambda_2)
-
-
-
-
-    @constraint(m, [i in 2:n] , sum(x[i,j] for j in 1:n ) == 1 )
-    @constraint(m, [j in 2:n] , sum(x[i,j] for i in 1:n ) == 1 )
+    # Les véhicules partent et reviennent au dépôt
     @constraint(m, sum(x[1,j] for j in 2:n) == sum(x[i,1] for i in 2:n))
-                    
-                   
-    @constraint(m, sum(x[i,i] for i in 1:n) == 0) # on ne peut pas aller de i à i
 
-    
-    @constraint(m, [i in 2:n,j in 2:n, i!=j], u[j] - u[i] >= d[i] - C*(1-x[i,j]))
+    # Suppression des auto-boucles
+    @constraint(m, [i in 1:n], x[i,i] == 0)
 
-   
-
-    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] + th[j]) * x[i,j] <= lambda_1 + alpha[i,j] )
-    @constraint(m, [j in 1:n, i in 1:n, i!=j], (th[i] * th[j]) * x[i,j] <= lambda_2 + beta[i,j] )
-
-
-        # Ajout dynamique des contraintes de sous-tour (SEC)
-    function add_subtour_constraints(m)
-        sol = value.(x)  # Solution courante
-        visited_nodes = [i for i in 2:n if sum(sol[i, j] for j in 1:n) > 0.5]
+    # Ajout dynamique des contraintes de sous-tour
+    function add_subtour_constraints()
+        sol_x = value.(x)  
+        visited_nodes = [i for i in 2:n if sum(sol_x[i, j] for j in 1:n) > 0.5]
 
         if length(visited_nodes) > 1
-            # Si sous-tour détecté, on l'interdit
             @constraint(m, sum(x[i, j] for i in visited_nodes, j in visited_nodes) <= length(visited_nodes) - 1)
         end
     end
 
-    # Résolution avec ajout dynamique des SEC
+    # Boucle d’optimisation avec suppression des sous-tours
     iteration = 0
     while true
         iteration += 1
         optimize!(m)
         
         prev_obj = objective_value(m)
-        add_subtour_constraints(m)  # Ajout des SEC
+        add_subtour_constraints()  # Ajout des SEC
 
         optimize!(m)  
         new_obj = objective_value(m)
 
-        if abs(prev_obj - new_obj) < 1e-5  # Si convergence
+        if abs(prev_obj - new_obj) < 1e-5  # Convergence atteinte
             break
         end
     end
 
-
-    optimize!(m)
-    return JuMP.objective_value(m)
-
+    return objective_value(m)
 end
-"""
-for tour in sous_tour
-        complément = setdiff(1:n, tour)
-        @constraint(m, sum(x[i,j] for i in tour, j in complément) >= sum(d[i] for i in tour) / C)
-    end
-"""
+
+
 
 list_name = ["n_5-euclidean_false","n_5-euclidean_true",
                 "n_6-euclidean_false","n_6-euclidean_true",
@@ -101,9 +83,8 @@ list_name = ["n_5-euclidean_false","n_5-euclidean_true",
                 "n_11-euclidean_false","n_11-euclidean_true",
                 "n_12-euclidean_false","n_12-euclidean_true",
                 "n_13-euclidean_false","n_13-euclidean_true",
-                "n_14-euclidean_false","n_14-euclidean_true",
-                "n_15-euclidean_false","n_15-euclidean_true",
-                "n_16-euclidean_false","n_16-euclidean_true",]
+                "n_14-euclidean_false"
+                ]
 liste_reduite = ["n_5-euclidean_true"]
 
 function main(list_name)
@@ -119,6 +100,9 @@ function main(list_name)
             push!(results, (file_name, obj, exec_time, global_exec_time))
         end
     end
-    println(results)
+    fout = open("output_non_compact.txt", "w")
+    # Ecrire "test" dans ce fichier
+    println(fout, results)
+    close(fout)
 end
   
