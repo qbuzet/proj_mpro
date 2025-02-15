@@ -79,16 +79,13 @@ function branch_and_cut(file_name::String)
     
     @objective(m, Min, z)
     
+    set_optimizer_attribute(m, "CPX_PARAM_TILIM", 180)
     #set_optimizer_attribute(m, "OutputFlag", 0)
     
     start_time = time()
     i = 1
     last_value = 0
     while true
-        if time() - start_time > 180
-            return last_value;
-        end
-
         println("Iteration : ", i)
         optimize!(m)
 
@@ -109,12 +106,16 @@ function branch_and_cut(file_name::String)
 
         last_value = zz
 
+        if time() - start_time > 180
+            return MOI.get(m, MOI.RelativeGap());
+        end
+
         @constraint(m, z >= sum((t[i,j] + dd1[i,j]*(th[i]+th[j]) + dd2[i,j]*th[i]*th[j])*x[i,j] for i in 1:n, j in 1:n))
 
         i += 1
     end
 
-    return objective_value(m)
+    return MOI.get(m, MOI.RelativeGap()); #objective_value(m)
 end
 
 
@@ -155,22 +156,21 @@ liste_reduite = ["n_14-euclidean_true"]
 function main(liste)
     results = []
     global_start = time()
+    fout = open("output_branch_and_cut_limit.txt", "w")
     for file_name in liste
         if occursin("euclidean", file_name)
             start = time()           
             println("Fichier : ", file_name)
-            obj = branch_and_cut(file_name, global_start)
+            obj = branch_and_cut(file_name)
             exec_time = time() - start
             global_exec_time = time() - global_start
-            push!(results, (file_name, obj, exec_time, global_exec_time))
+            r = (file_name, obj, exec_time, global_exec_time)
+            println(fout, r)
             #if global_exec_time > 3600
             #    break
             #end
         end
     end
-    fout = open("output_branch_and_cut_limit.txt", "w")
-    # Ecrire "test" dans ce fichier
-    println(fout, results)
     close(fout)
 end
   
